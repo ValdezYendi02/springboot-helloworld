@@ -10,7 +10,7 @@ pipeline {
         NEXUS_REPO_URL       = 'http://localhost:8081/repository/maven-release/'  // make sure this matches your repo name
         NEXUS_GROUP_ID       = 'com.example'               // from pom.xml
         NEXUS_ARTIFACT_ID    = 'spring-boot-complete'      // from pom.xml
-        NEXUS_VERSION        = '0.0.1-SNAPSHOT'            // from pom.xml
+        NEXUS_VERSION        = '1.0.0'            // from pom.xml
         NEXUS_CREDENTIALS_ID = 'nexus-creds'
     }
 
