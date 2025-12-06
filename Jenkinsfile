@@ -38,5 +38,38 @@ pipeline {
                 }
             }
         }
+
+        stage('Upload to Nexus') {
+            steps {
+                dir('complete') {
+                    script {
+                        // find the built JAR in target/
+                        def jarFile = sh(
+                            script: "ls target/*.jar",
+                            returnStdout: true
+                        ).trim()
+    
+                        echo "Uploading ${jarFile} to Nexus..."
+    
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: env.NEXUS_CREDENTIALS_ID,
+                                usernameVariable: 'NEXUS_USERNAME',
+                                passwordVariable: 'NEXUS_PASSWORD'
+                            )
+                        ]) {
+                            // Build the Nexus path: groupId/artifactId/version/artifactId-version.jar
+                            def groupPath = env.NEXUS_GROUP_ID.replace('.', '/')
+                            def nexusPath = "${groupPath}/${env.NEXUS_ARTIFACT_ID}/${env.NEXUS_VERSION}/${env.NEXUS_ARTIFACT_ID}-${env.NEXUS_VERSION}.jar"
+    
+                            sh """
+                                curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
+                                    --upload-file ${jarFile} \
+                                    "${env.NEXUS_REPO_URL}${nexusPath}"
+                            """
+                        }
+                    }
+                }
+            }
     }
 }
