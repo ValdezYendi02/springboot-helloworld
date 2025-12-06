@@ -7,10 +7,10 @@ pipeline {
 
     environment {
         // Nexus config
-        NEXUS_REPO_URL      = 'http://localhost:8081/repository/maven-release/'
-        NEXUS_GROUP_ID      = 'com.example'               // match your pom.xml
-        NEXUS_ARTIFACT_ID   = 'springboot-helloworld'     // match your pom.xml
-        NEXUS_VERSION       = '1.0.0'                     // match your pom.xml
+        NEXUS_REPO_URL       = 'http://localhost:8081/repository/maven-release/'  // make sure this matches your repo name
+        NEXUS_GROUP_ID       = 'com.example'               // from pom.xml
+        NEXUS_ARTIFACT_ID    = 'spring-boot-complete'      // from pom.xml
+        NEXUS_VERSION        = '0.0.1-SNAPSHOT'            // from pom.xml
         NEXUS_CREDENTIALS_ID = 'nexus-creds'
     }
 
@@ -33,7 +33,7 @@ pipeline {
 
         stage('Archive Artifact') {
             steps {
-                dir ('complete') {
+                dir('complete') {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
@@ -41,34 +41,36 @@ pipeline {
 
         stage('Upload to Nexus') {
             steps {
-                script {
-                    // find the built JAR in target/
-                    def jarFile = sh(
-                        script: "ls target/*.jar",
-                        returnStdout: true
-                    ).trim()
+                dir('complete') {     // important: we’re now inside the 'complete' folder
+                    script {
+                        // find the built JAR in target/
+                        def jarFile = sh(
+                            script: "ls target/*.jar",
+                            returnStdout: true
+                        ).trim()
 
-                    echo "Uploading ${jarFile} to Nexus..."
+                        echo "Uploading ${jarFile} to Nexus..."
 
-                    withCredentials([
-                        usernamePassword(
-                            credentialsId: env.NEXUS_CREDENTIALS_ID,
-                            usernameVariable: 'NEXUS_USERNAME',
-                            passwordVariable: 'NEXUS_PASSWORD'
-                        )
-                    ]) {
-                        // Build the Nexus path: groupId/artifactId/version/artifactId-version.jar
-                        def groupPath = env.NEXUS_GROUP_ID.replace('.', '/')
-                        def nexusPath = "${groupPath}/${env.NEXUS_ARTIFACT_ID}/${env.NEXUS_VERSION}/${env.NEXUS_ARTIFACT_ID}-${env.NEXUS_VERSION}.jar"
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: env.NEXUS_CREDENTIALS_ID,
+                                usernameVariable: 'NEXUS_USERNAME',
+                                passwordVariable: 'NEXUS_PASSWORD'
+                            )
+                        ]) {
+                            // Build the Nexus path: groupId/artifactId/version/artifactId-version.jar
+                            def groupPath = env.NEXUS_GROUP_ID.replace('.', '/')
+                            def nexusPath = "${groupPath}/${env.NEXUS_ARTIFACT_ID}/${env.NEXUS_VERSION}/${env.NEXUS_ARTIFACT_ID}-${env.NEXUS_VERSION}.jar"
 
-                        sh """
-                            curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
-                                --upload-file ${jarFile} \
-                                "${env.NEXUS_REPO_URL}${nexusPath}"
-                        """
+                            sh """
+                                curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
+                                    --upload-file ${jarFile} \
+                                    "${env.NEXUS_REPO_URL}${nexusPath}"
+                            """
+                        }
                     }
                 }
-                
             }
+        }
     }
 }
